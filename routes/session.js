@@ -6,8 +6,10 @@ const short = require('short-uuid');
 router.post('/create-session', async (req, res) => {
   try {
     const uuid = short().new();
+    const host = req.body.host ? req.body.host : 'Anonymous';
     const session = new Session({
       _id: uuid,
+      host,
     });
 
     await session.save();

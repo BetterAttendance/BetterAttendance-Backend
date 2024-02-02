@@ -37,11 +37,12 @@ mongoose.connect(process.env.DB_URI, { useNewUrlParser: true }).then(() => {
     // Inform when the client connects successfully
     if (users[socket.id]) {
       console.log(`${socket.id} connected`);
-      socket.on('new-client', name => {
-        users[socket.id] = name
-        console.log(`${users[socket.id]} has connected to the server`);
-      });
-  }
+    }
+
+    socket.on('new-client', (name) => {
+      users[socket.id] = name
+      console.log(`${users[socket.id]} has connected to the server`);
+    });
 
     socket.on("disconnect", () => {
       console.log(`${users[socket.id]} disconnected`);
