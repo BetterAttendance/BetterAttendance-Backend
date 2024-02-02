@@ -56,7 +56,9 @@ mongoose.connect(process.env.DB_URI, { useNewUrlParser: true }).then(() => {
     socket.on("create-session", async () => {
       try {
         // Fetch post request using axios
-        const response = await axios.post('http://localhost:3333/session/create-session');
+        const host = users[socket.id]; // Assuming users is a dictionary mapping socket IDs to usernames
+        const response = await axios.post('http://localhost:3333/session/create-session', { host });
+        
         const { sessionId } = response.data;
         console.log(`${users[socket.id]} created session ${sessionId}`);
       } catch (error) {
