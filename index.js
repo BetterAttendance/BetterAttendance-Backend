@@ -54,22 +54,27 @@ mongoose.connect(process.env.DB_URI, { useNewUrlParser: true }).then(() => {
     });
 
     socket.on('disconnect', () => {
-      if (DEBUG) {
-        console.log('sessionUsersCount:', sessionUsersCount);
-        console.log('socketID:', socket.id);
-      }
-
       // Subtract the user count for the session
-      const sessionID = socketSessionMap[socket.id];  // Get the session ID associated with the disconnected socket
-      if (sessionID && sessionUsersCount[sessionID]) {
+      if (socket.id in users) {
+        console.log(`User ${users[socket.id]} has disconnected from the server`)
+
+        const sessionID = socketSessionMap[socket.id];  // Get the session ID associated with the disconnected socket
         sessionUsersCount[sessionID]--;
+        io.emit('user-left', { username: users[socket.id], sessionID, count: sessionUsersCount[sessionID] });
+        console.log(`${users[socket.id]} disconnected`);
+
+        delete users[socket.id];
+        delete socketSessionMap[socket.id];
+
+        if (DEBUG) {
+          console.log('sessionUsersCount after:', sessionUsersCount[sessionID]);
+          console.log('socketID after:', socket.id);
+        }
+
+      } else if (socket.id in hosts) {
+        console.log(`Host ${hosts[socket.id]} has disconnected from the server`)
+        delete hosts[socket.id];
       }
-      io.emit('user-left', { username: users[socket.id], sessionID, count: sessionUsersCount[sessionID] });
-
-      console.log(`${users[socket.id]} disconnected`);
-
-      delete users[socket.id];
-      delete socketSessionMap[socket.id];
     });
 
     socket.on('create-session', async () => {
