@@ -45,35 +45,47 @@ mongoose.connect(process.env.DB_URI, { useNewUrlParser: true }).then(() => {
 
     socket.on('new-host', (name) => {
       hosts[socket.id] = name;
-      console.log(`Host ${hosts[socket.id]} has connected to the server`);
+      console.log(`Host ${hosts[socket.id]} (${socket.id}) has connected to the server`);
     });
 
     socket.on('new-client', (name) => {
       users[socket.id] = name;
-      console.log(`${users[socket.id]} has connected to the server`);
+      console.log(`${users[socket.id]} (${socket.id}) has connected to the server`);
     });
 
     socket.on('disconnect', () => {
+      if (DEBUG) {
+        console.log('disconnect event triggered');
+        console.log('Socket id:' + socket.id);
+        console.log('Users list:', users); // Logging the users object
+      }
+
+      // Convert socket.id to string for comparison (some cases where socket.id is not a string)
+      const socketIdString = String(socket.id);
+
       // Subtract the user count for the session
-      if (socket.id in users) {
-        console.log(`User ${users[socket.id]} has disconnected from the server`)
+      if (socketIdString in users) {
+        console.log(`User ${users[socketIdString]} has disconnected from the server`)
 
-        const sessionID = socketSessionMap[socket.id];  // Get the session ID associated with the disconnected socket
+        const sessionID = socketSessionMap[socketIdString];  // Get the session ID associated with the disconnected socket
         sessionUsersCount[sessionID]--;
-        io.emit('user-left', { username: users[socket.id], sessionID, count: sessionUsersCount[sessionID] });
-        console.log(`${users[socket.id]} disconnected`);
+        io.emit('user-left', { username: users[socketIdString], sessionID, count: sessionUsersCount[sessionID] });
+        console.log(`${users[socketIdString]} disconnected`);
 
-        delete users[socket.id];
-        delete socketSessionMap[socket.id];
+        delete users[socketIdString];
+        delete socketSessionMap[socketIdString];
 
         if (DEBUG) {
           console.log('sessionUsersCount after:', sessionUsersCount[sessionID]);
-          console.log('socketID after:', socket.id);
+          console.log('socketID after:', socketIdString);
         }
 
-      } else if (socket.id in hosts) {
-        console.log(`Host ${hosts[socket.id]} has disconnected from the server`)
-        delete hosts[socket.id];
+      } else if (socketIdString in hosts) {
+        console.log(`Host ${hosts[socketIdString]} has disconnected from the server`)
+        delete hosts[socketIdString];
+      } else {
+        // Handle disconnection for other cases
+        console.log(`Unknown socket ${socketIdString} has disconnected from the server`);
       }
     });
 
