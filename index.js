@@ -89,6 +89,16 @@ mongoose.connect(process.env.DB_URI, { useNewUrlParser: true }).then(() => {
       }
     });
 
+    /* Leave session event handler when the user hit return to home page.
+    Note: it is required as we do not want to erase user's socket id 
+    as they may want to reconnect to a new session */
+    socket.on('leave-session', () => {
+      const sessionID = socketSessionMap[socket.id];
+      sessionUsersCount[sessionID]--;
+      io.emit('user-left', { username: users[socket.id], sessionID, count: sessionUsersCount[sessionID] });
+      delete socketSessionMap[socket.id];
+    });
+
     socket.on('create-session', async () => {
       try {
         // Fetch post request using axios
