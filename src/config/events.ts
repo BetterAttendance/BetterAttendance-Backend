@@ -6,11 +6,13 @@ const EVENTS = {
     JOIN_SESSION: 'c-join-session',
     LEAVE_SESSION: 'c-leave-session',
     CREATE_SESSION: 'c-create-session',
+    CHECK_IF_HOST: 's-check-if-host',
   },
   SERVER: {
     JOIN_SESSION: 's-join-session',
     LEAVE_SESSION: 's-leave-session',
     CREATE_SESSION: 's-create-session',
+    CHECK_IF_HOST: 's-check-if-host',
   },
 };
 
