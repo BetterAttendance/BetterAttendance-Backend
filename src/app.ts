@@ -18,7 +18,7 @@ const io = new Server(httpServer, {
   maxHttpBufferSize: 1e8,
 });
 
-const hostIDs = {};
+let hostIDs = new Map<String, String>();
 
 httpServer.listen(CONFIG.PORT, () => {
   console.log(`Server is up and running on port: ${CONFIG.PORT}`);
@@ -45,7 +45,7 @@ httpServer.listen(CONFIG.PORT, () => {
       socket.data.session = sessionID;
       
       // Saving to the maps of hostIDs with index based on sessionID
-      hostIDs[sessionID] = data.host_id;
+      hostIDs.set(sessionID, data.host_id);
 
       console.log(`${data.host_id} created room: ${sessionID}`);
       socket.join(sessionID);
@@ -73,11 +73,11 @@ httpServer.listen(CONFIG.PORT, () => {
     });
 
     socket.on(EVENTS.CLIENT.CHECK_IF_HOST, async (data) => {
-      const isHost = hostIDs[data.sessionID] === data.userID;
+      const isHost = hostIDs.get(data.sessionID) === data.userID;
     
       if (DEBUG) {
         console.log(`Checking if user ${data.userID} is host of session ${data.sessionID}`);
-        console.log(hostIDs[data.sessionID] + "(backend) | " + data.userID + " (input) =>" + isHost)
+        console.log(hostIDs.get(data.sessionID) + "(backend) | " + data.userID + " (input) =>" + isHost)
       }
 
       socket.emit(EVENTS.SERVER.CHECK_IF_HOST, {
