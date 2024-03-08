@@ -41,43 +41,43 @@ httpServer.listen(CONFIG.PORT, () => {
         'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
         5
       );
-      const sessionID = nanoid();
-      socket.data.session = sessionID;
+      const sessionCode = nanoid();
+      socket.data.session = sessionCode;
       
-      // Saving to the maps of hostIDs with index based on sessionID
-      hostIDs.set(sessionID, data.host_id);
+      // Saving to the maps of hostIDs with index based on sessionCode
+      hostIDs.set(sessionCode, data.host_id);
 
-      console.log(`${data.host_id} created room: ${sessionID}`);
-      socket.join(sessionID);
+      console.log(`${data.host_id} created room: ${sessionCode}`);
+      socket.join(sessionCode);
 
       socket.emit(EVENTS.SERVER.JOIN_SESSION, {
-        sessionID: sessionID,
+        sessionCode: sessionCode,
       });
 
       if (CONFIG.DEBUG) {
         console.log(
-          `SessionID (${sessionID}) emitted to ${EVENTS.SERVER.JOIN_SESSION}`
+          `sessionCode (${sessionCode}) emitted to ${EVENTS.SERVER.JOIN_SESSION}`
         );
       }
     });
 
     socket.on(EVENTS.CLIENT.JOIN_SESSION, async (data) => {
-      console.log(`${data.username} joined ${data.sessionID}`);
+      console.log(`${data.username} joined ${data.sessionCode}`);
       socket.data.username = data.username;
-      socket.join(data.sessionID);
-      socket.data.session = data.sessionID;
+      socket.join(data.sessionCode);
+      socket.data.session = data.sessionCode;
 
       socket.emit(EVENTS.SERVER.JOIN_SESSION, {
-        sessionID: data.sessionID,
+        sessionCode: data.sessionCode,
       });
     });
 
     socket.on(EVENTS.CLIENT.CHECK_IF_HOST, async (data) => {
-      const isHost = hostIDs.get(data.sessionID) === data.userID;
+      const isHost = hostIDs.get(data.sessionCode) === data.userID;
     
       if (DEBUG) {
-        console.log(`Checking if user ${data.userID} is host of session ${data.sessionID}`);
-        console.log(hostIDs.get(data.sessionID) + "(backend) | " + data.userID + " (input) =>" + isHost)
+        console.log(`Checking if user ${data.userID} is host of session ${data.sessionCode}`);
+        console.log(hostIDs.get(data.sessionCode) + "(backend) | " + data.userID + " (input) =>" + isHost)
       }
 
       socket.emit(EVENTS.SERVER.CHECK_IF_HOST, {
@@ -86,8 +86,8 @@ httpServer.listen(CONFIG.PORT, () => {
     });
 
     socket.on(EVENTS.CLIENT.LEAVE_SESSION, async (data) => {
-      console.log(`User ${socket.id} left session ${data.sessionID}`);
-      socket.leave(data.sessionID);
+      console.log(`User ${socket.id} left session ${data.sessionCode}`);
+      socket.leave(data.sessionCode);
 
       socket.emit(EVENTS.SERVER.LEAVE_SESSION, data);
     });
