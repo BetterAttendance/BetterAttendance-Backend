@@ -72,6 +72,19 @@ httpServer.listen(CONFIG.PORT, () => {
       });
     });
 
+    socket.on(EVENTS.CLIENT.VALIDATE_SESSION, async (data) => {
+      // Check if sessionCode (hostIDs index) exists
+      const isValid = hostIDs.has(data.sessionCode);
+
+      if (DEBUG) {
+        console.log(`Validating if session ${data.sessionCode} exists: ${isValid}`);
+      }
+
+      socket.emit(EVENTS.SERVER.VALIDATE_SESSION, {
+        isValid: isValid,
+      });
+    });
+
     socket.on(EVENTS.CLIENT.CHECK_IF_HOST, async (data) => {
       const isHost = hostIDs.get(data.sessionCode) === data.userID;
     
