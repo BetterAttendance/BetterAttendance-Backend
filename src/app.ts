@@ -24,13 +24,13 @@ httpServer.listen(CONFIG.PORT, () => {
   console.log(`Server is up and running on port: ${CONFIG.PORT}`);
 
   io.on(EVENTS.CONNECTION, (socket: Socket) => {
-    console.log(`User ${socket.id} is connected.`);
+    console.log(`User (socket: ${socket.id}) is connected.`);
 
     socket.on(EVENTS.DISCONNECT, async () => {
       if (socket.data.session) {
         socket.leave(socket.data.session);
       }
-      console.log(`User ${socket.id} is disconnected.`);
+      console.log(`User (socket: ${socket.id}) is disconnected.`);
     });
 
     socket.on(EVENTS.CLIENT.CREATE_SESSION, async (data) => {
