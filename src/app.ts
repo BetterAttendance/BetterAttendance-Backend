@@ -4,8 +4,7 @@ import { Server, Socket } from 'socket.io';
 import { customAlphabet } from 'nanoid';
 import EVENTS from './config/events';
 import CONFIG from './config/config';
-
-const DEBUG = true;
+import { createSession, Session } from './session';
 
 const app = express();
 const httpServer = createServer(app);
@@ -18,36 +17,27 @@ const io = new Server(httpServer, {
   maxHttpBufferSize: 1e8,
 });
 
-let hostIDs = new Map<String, String>();
+const sessions = new Map<String, Session>();
 
 httpServer.listen(CONFIG.PORT, () => {
   console.log(`Server is up and running on port: ${CONFIG.PORT}`);
 
   io.on(EVENTS.CONNECTION, (socket: Socket) => {
-    console.log(`User (socket: ${socket.id}) is connected.`);
-
     socket.on(EVENTS.DISCONNECT, async () => {
       if (socket.data.session) {
         socket.leave(socket.data.session);
       }
-      console.log(`User (socket: ${socket.id}) is disconnected.`);
     });
 
     socket.on(EVENTS.CLIENT.CREATE_SESSION, async (data) => {
-      // As we switched from socketID to userID to identify hosts, it is no need for now
-      // socket.data.host_id = data.host_id;
-      
       const nanoid = customAlphabet(
         'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
         5
       );
       const sessionCode = nanoid();
       socket.data.session = sessionCode;
-      
-      // Saving to the maps of hostIDs with index based on sessionCode
-      hostIDs.set(sessionCode, data.host_id);
 
-      console.log(`${data.host_id} created room: ${sessionCode}`);
+      sessions.set(sessionCode, createSession({ host: data.host_id }));
       socket.join(sessionCode);
 
       socket.emit(EVENTS.SERVER.JOIN_SESSION, {
@@ -56,7 +46,7 @@ httpServer.listen(CONFIG.PORT, () => {
 
       if (CONFIG.DEBUG) {
         console.log(
-          `sessionCode (${sessionCode}) emitted to ${EVENTS.SERVER.JOIN_SESSION}`
+          `[CREATE_SESSION] Session ${sessionCode} created successfully.`
         );
       }
     });
@@ -74,35 +64,54 @@ httpServer.listen(CONFIG.PORT, () => {
 
     socket.on(EVENTS.CLIENT.VALIDATE_SESSION, async (data) => {
       // Check if sessionCode (hostIDs index) exists
-      const isValid = hostIDs.has(data.sessionCode);
-
-      if (DEBUG) {
-        console.log(`Validating if session ${data.sessionCode} exists: ${isValid}`);
-      }
+      const isValid = sessions.has(data.sessionCode);
 
       socket.emit(EVENTS.SERVER.VALIDATE_SESSION, {
         isValid: isValid,
       });
+
+      if (CONFIG.DEBUG) {
+        console.log(
+          `[VALIDATE_SESSION] The session ${data.sessionCode} ` +
+            (isValid ? `exists.` : `doesn't exist.`)
+        );
+      }
     });
 
     socket.on(EVENTS.CLIENT.CHECK_IF_HOST, async (data) => {
-      const isHost = hostIDs.get(data.sessionCode) === data.userID;
-    
-      if (DEBUG) {
-        console.log(`Checking if user ${data.userID} is host of session ${data.sessionCode}`);
-        console.log(hostIDs.get(data.sessionCode) + "(backend) | " + data.userID + " (input) =>" + isHost)
-      }
+      const isHost = sessions.get(data.sessionCode).host === data.userID;
 
       socket.emit(EVENTS.SERVER.CHECK_IF_HOST, {
         isHost: isHost,
       });
+
+      if (CONFIG.DEBUG) {
+        console.log(
+          `[CHECK_IF_HOST] Requested: ${data.sessionCode} | userId: ${data.userID}`
+        );
+        console.log(sessions.get(data.sessionCode));
+        console.log(
+          `The user is ` +
+            (isHost
+              ? `the host of the session.`
+              : `not the host of the session`)
+        );
+      }
     });
 
-    socket.on(EVENTS.CLIENT.LEAVE_SESSION, async (data) => {
-      console.log(`User ${socket.id} left session ${data.sessionCode}`);
-      socket.leave(data.sessionCode);
+    socket.on(EVENTS.CLIENT.HOST_QUIT_SESSION, async (data) => {
+      console.log(`data: ${data.sessionCode}, ${data.userId}`);
+      // TODO:
+      // 1. Check if the sessionCode is valid, handle if not
+      // 2. Check if the user is the host, and handle if not
+      // 3. Disconnect all users connected to the session
+      // 4. Remove socket.io room
+      // 5. Remove session from session list
+      // 6. Remove host from hostIDs
+      // 7. Notify client
 
-      socket.emit(EVENTS.SERVER.LEAVE_SESSION, data);
+      // socket.leave(data.sessionCode);
+      // socket.emit(EVENTS.SERVER.HOST_QUIT_SESSION, data);
     });
   });
 });
