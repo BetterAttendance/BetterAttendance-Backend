@@ -5,6 +5,7 @@ import { customAlphabet } from 'nanoid';
 import EVENTS from './config/events';
 import CONFIG from './config/config';
 import { createSession, Session } from './session';
+import { createAttendee } from './attendee';
 
 const app = express();
 const httpServer = createServer(app);
@@ -40,6 +41,10 @@ httpServer.listen(CONFIG.PORT, () => {
       sessions.set(sessionCode, createSession({ host: data.host_id }));
       socket.join(sessionCode);
 
+      io.in(sessionCode).emit(EVENTS.UPDATE_USERS, {
+        usersConnected: 0,
+      });
+
       socket.emit(EVENTS.SERVER.JOIN_SESSION, {
         sessionCode: sessionCode,
       });
@@ -52,14 +57,28 @@ httpServer.listen(CONFIG.PORT, () => {
     });
 
     socket.on(EVENTS.CLIENT.JOIN_SESSION, async (data) => {
-      console.log(`${data.username} joined ${data.sessionCode}`);
-      socket.data.username = data.username;
+      sessions
+        .get(data.sessionCode)
+        .attendees.push(
+          createAttendee({ userId: data.userId, username: data.username })
+        );
+
       socket.join(data.sessionCode);
-      socket.data.session = data.sessionCode;
+
+      io.in(data.sessionCode).emit(EVENTS.UPDATE_USERS, {
+        usersConnected: sessions.get(data.sessionCode).attendees.length,
+      });
 
       socket.emit(EVENTS.SERVER.JOIN_SESSION, {
         sessionCode: data.sessionCode,
       });
+
+      if (CONFIG.DEBUG) {
+        console.log(
+          `[JOIN_SESSION] ${data.username} joined ${data.sessionCode}`
+        );
+        console.log(sessions.get(data.sessionCode));
+      }
     });
 
     socket.on(EVENTS.CLIENT.VALIDATE_SESSION, async (data) => {
