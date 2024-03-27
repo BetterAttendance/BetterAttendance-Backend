@@ -5,7 +5,6 @@ import { customAlphabet } from 'nanoid';
 import EVENTS from './config/events';
 import CONFIG from './config/config';
 import { createSession, Session } from './session';
-import { createAttendee } from './attendee';
 
 const app = express();
 const httpServer = createServer(app);
@@ -57,16 +56,12 @@ httpServer.listen(CONFIG.PORT, () => {
     });
 
     socket.on(EVENTS.CLIENT.JOIN_SESSION, async (data) => {
-      sessions
-        .get(data.sessionCode)
-        .attendees.push(
-          createAttendee({ userId: data.userId, username: data.username })
-        );
+      sessions.get(data.sessionCode).attendees.set(data.userId, data.username);
 
       socket.join(data.sessionCode);
 
       io.in(data.sessionCode).emit(EVENTS.UPDATE_USERS, {
-        usersConnected: sessions.get(data.sessionCode).attendees.length,
+        usersConnected: sessions.get(data.sessionCode).attendees.size,
       });
 
       socket.emit(EVENTS.SERVER.JOIN_SESSION, {
@@ -118,17 +113,46 @@ httpServer.listen(CONFIG.PORT, () => {
       }
     });
 
+    socket.on(EVENTS.CLIENT.ATTENDEE_QUIT_SESSION, async (data) => {
+      // TODO: Handle if sessionCode or attendee not found
+      const sessionCode = data.sessionCode;
+      const userId = data.userId;
+
+      if (!sessions.has(sessionCode)) {
+        return;
+      }
+
+      if (!sessions.get(sessionCode).attendees.has(userId)) {
+        return;
+      }
+
+      sessions.get(sessionCode).attendees.delete(userId);
+
+      io.in(sessionCode).emit(EVENTS.UPDATE_USERS, {
+        usersConnected: sessions.get(sessionCode).attendees.size,
+      });
+
+      if (CONFIG.DEBUG) {
+        console.log(
+          `[ATTENDEE_QUIT_SESSION] User ${userId} left session ${sessionCode}`
+        );
+        console.log(sessions.get(sessionCode));
+      }
+    });
+
     socket.on(EVENTS.CLIENT.HOST_QUIT_SESSION, async (data) => {
-      console.log(`data: ${data.sessionCode}, ${data.userId}`);
       // TODO:
       // 1. Check if the sessionCode is valid, handle if not
+      if (!sessions.has(data.sessionCode)) {
+        return;
+      }
+
       // 2. Check if the user is the host, and handle if not
       // 3. Disconnect all users connected to the session
       // 4. Remove socket.io room
       // 5. Remove session from session list
       // 6. Remove host from hostIDs
       // 7. Notify client
-
       // socket.leave(data.sessionCode);
       // socket.emit(EVENTS.SERVER.HOST_QUIT_SESSION, data);
     });
