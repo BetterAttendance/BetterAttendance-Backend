@@ -56,6 +56,9 @@ httpServer.listen(CONFIG.PORT, () => {
     });
 
     socket.on(EVENTS.CLIENT.JOIN_SESSION, async (data) => {
+      //  For Khoi!!
+      // TODO: Validate if session is exists and if user is a host, and handle it properly.
+
       sessions.get(data.sessionCode).attendees.set(data.userId, data.username);
 
       socket.join(data.sessionCode);
@@ -141,14 +144,23 @@ httpServer.listen(CONFIG.PORT, () => {
     });
 
     socket.on(EVENTS.CLIENT.HOST_QUIT_SESSION, async (data) => {
+      const sessionCode = data.sessionCode;
+      const userId = data.userId;
+
       // TODO:
       // 1. Check if the sessionCode is valid, handle if not
-      if (!sessions.has(data.sessionCode)) {
+      if (!sessions.has(sessionCode)) {
         return;
       }
 
-      // 2. Check if the user is the host, and handle if not
+      // 2. Check if the user is the host, and handle if not ??
+      if (sessions.get(sessionCode).host !== userId) {
+        return;
+      }
+
       // 3. Disconnect all users connected to the session
+      io.in(sessionCode).emit(EVENTS.DISCONNECT_USERS);
+
       // 4. Remove socket.io room
       // 5. Remove session from session list
       // 6. Remove host from hostIDs

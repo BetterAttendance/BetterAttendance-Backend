@@ -2,6 +2,7 @@ const EVENTS = {
   CONNECTION: 'connection',
   DISCONNECT: 'disconnect',
   UPDATE_USERS: 'update-connected-users',
+  DISCONNECT_USERS: 'disconnect-users',
   CLIENT: {
     JOIN_SESSION: 'c-join-session',
     HOST_QUIT_SESSION: 'c-host-quit-session',
