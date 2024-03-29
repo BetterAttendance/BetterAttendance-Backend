@@ -15,7 +15,7 @@ const EVENTS = {
     ATTENDEE_QUIT_SESSION: `s-attendee-quit-session`,
     CREATE_SESSION: 's-create-session',
     VALIDATE_SESSION_CODE: 's-validate-session-code',
-    VALIDATE_HOST: 's-validate-host',
+    VALIDATE_NAME: 's-validate-name',
   },
 };
 

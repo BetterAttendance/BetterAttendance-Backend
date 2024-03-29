@@ -69,12 +69,19 @@ httpServer.listen(CONFIG.PORT, () => {
 
       socket.join(data.sessionCode);
 
-      // Check if user is host, if not add user to attendees
-      if (sessions.get(data.sessionCode).host != data.userId) {
+      // Check if user is host, if not check if there is a username to add user to attendees
+      if (sessions.get(data.sessionCode).host != data.userId && data.username != null) {
         sessions.get(data.sessionCode).attendees.set(data.userId, data.username)
         io.in(data.sessionCode).emit(EVENTS.UPDATE_USERS, {
           usersConnected: sessions.get(data.sessionCode).attendees.size,
         });
+      } 
+      // If not, cancel the join session request as the user does not have a username
+      else if (sessions.get(data.sessionCode).host != data.userId) {
+        socket.emit(EVENTS.SERVER.VALIDATE_NAME, {
+          isMissing: true,
+        });
+        return;
       }
 
       // Send back the sessionCode and host validation to the client
