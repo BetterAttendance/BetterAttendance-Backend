@@ -44,7 +44,7 @@ httpServer.listen(CONFIG.PORT, () => {
         usersConnected: 0,
       });
 
-      socket.emit(EVENTS.SERVER.JOIN_SESSION, {
+      socket.emit(EVENTS.SERVER.CREATE_SESSION, {
         sessionCode: sessionCode,
       });
 
@@ -56,63 +56,43 @@ httpServer.listen(CONFIG.PORT, () => {
     });
 
     socket.on(EVENTS.CLIENT.JOIN_SESSION, async (data) => {
-      //  For Khoi!!
-      // TODO: Validate if session is exists and if user is a host, and handle it properly.
-
-      sessions.get(data.sessionCode).attendees.set(data.userId, data.username);
+      
+      // Check if session exists
+      if (!sessions.has(data.sessionCode)) {
+        socket.emit(EVENTS.SERVER.VALIDATE_SESSION_CODE, {
+          isValid: false,
+        });
+  
+        // If not found, cancel the join session request
+        return;
+      }
 
       socket.join(data.sessionCode);
 
-      io.in(data.sessionCode).emit(EVENTS.UPDATE_USERS, {
-        usersConnected: sessions.get(data.sessionCode).attendees.size,
-      });
+      // Check if user is host, if not add user to attendees
+      if (sessions.get(data.sessionCode).host != data.userId) {
+        sessions.get(data.sessionCode).attendees.set(data.userId, data.username)
+        io.in(data.sessionCode).emit(EVENTS.UPDATE_USERS, {
+          usersConnected: sessions.get(data.sessionCode).attendees.size,
+        });
+      }
 
+      // Send back the sessionCode and host validation to the client
       socket.emit(EVENTS.SERVER.JOIN_SESSION, {
         sessionCode: data.sessionCode,
+        isHost: sessions.get(data.sessionCode).host === data.userId,
       });
 
-      if (CONFIG.DEBUG) {
+      if (CONFIG.DEBUG && sessions.get(data.sessionCode).host === data.userId) {
         console.log(
-          `[JOIN_SESSION] ${data.username} joined ${data.sessionCode}`
+          `[JOIN_SESSION] ${data.userId} joined ${data.sessionCode} as a host.`
         );
         console.log(sessions.get(data.sessionCode));
-      }
-    });
-
-    socket.on(EVENTS.CLIENT.VALIDATE_SESSION, async (data) => {
-      // Check if sessionCode (hostIDs index) exists
-      const isValid = sessions.has(data.sessionCode);
-
-      socket.emit(EVENTS.SERVER.VALIDATE_SESSION, {
-        isValid: isValid,
-      });
-
-      if (CONFIG.DEBUG) {
+      } else if (CONFIG.DEBUG) {
         console.log(
-          `[VALIDATE_SESSION] The session ${data.sessionCode} ` +
-            (isValid ? `exists.` : `doesn't exist.`)
-        );
-      }
-    });
-
-    socket.on(EVENTS.CLIENT.CHECK_IF_HOST, async (data) => {
-      const isHost = sessions.get(data.sessionCode).host === data.userID;
-
-      socket.emit(EVENTS.SERVER.CHECK_IF_HOST, {
-        isHost: isHost,
-      });
-
-      if (CONFIG.DEBUG) {
-        console.log(
-          `[CHECK_IF_HOST] Requested: ${data.sessionCode} | userId: ${data.userID}`
+          `[JOIN_SESSION] ${data.userId} joined ${data.sessionCode} as an attendee.`
         );
         console.log(sessions.get(data.sessionCode));
-        console.log(
-          `The user is ` +
-            (isHost
-              ? `the host of the session.`
-              : `not the host of the session`)
-        );
       }
     });
 
