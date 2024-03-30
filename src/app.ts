@@ -24,8 +24,31 @@ httpServer.listen(CONFIG.PORT, () => {
 
   io.on(EVENTS.CONNECTION, (socket: Socket) => {
     socket.on(EVENTS.DISCONNECT, async () => {
-      if (socket.data.session) {
-        socket.leave(socket.data.session);
+      const sessionCode = socket.data.session;
+      const userId = socket.data.userId;
+
+      if (!sessionCode) {
+        return;
+      }
+
+      if (!sessions.has(sessionCode)) {
+        return;
+      }
+
+      if (!sessions.get(sessionCode).attendees.has(userId)) {
+        return;
+      }
+
+      sessions.get(sessionCode).attendees.delete(userId);
+      socket.leave(sessionCode);
+
+      io.in(sessionCode).emit(EVENTS.UPDATE_USERS, {
+        usersConnected: sessions.get(sessionCode).attendees.size,
+      });
+
+      if (CONFIG.DEBUG) {
+        console.log(`[DISCONNECT] User ${userId} left session ${sessionCode}`);
+        console.log(sessions.get(sessionCode));
       }
     });
 
@@ -36,8 +59,9 @@ httpServer.listen(CONFIG.PORT, () => {
       );
       const sessionCode = nanoid();
       socket.data.session = sessionCode;
+      socket.data.userId = data.userId;
 
-      sessions.set(sessionCode, createSession({ host: data.host_id }));
+      sessions.set(sessionCode, createSession({ host: data.userId }));
       socket.join(sessionCode);
 
       io.in(sessionCode).emit(EVENTS.UPDATE_USERS, {
@@ -61,6 +85,8 @@ httpServer.listen(CONFIG.PORT, () => {
 
       sessions.get(data.sessionCode).attendees.set(data.userId, data.username);
 
+      socket.data.session = data.sessionCode;
+      socket.data.userId = data.userId;
       socket.join(data.sessionCode);
 
       io.in(data.sessionCode).emit(EVENTS.UPDATE_USERS, {
@@ -130,6 +156,7 @@ httpServer.listen(CONFIG.PORT, () => {
       }
 
       sessions.get(sessionCode).attendees.delete(userId);
+      socket.leave(sessionCode);
 
       io.in(sessionCode).emit(EVENTS.UPDATE_USERS, {
         usersConnected: sessions.get(sessionCode).attendees.size,
