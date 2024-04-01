@@ -4,7 +4,7 @@ export interface Session {
   attendees: Map<String, String>;
 }
 
-export function createSession(data: Partial<Session> = {}): Session {
+export function createSessionInterface(data: Partial<Session> = {}): Session {
   return {
     host: data.host,
     title: data.title || 'My Attendance',
