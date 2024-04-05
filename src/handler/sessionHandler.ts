@@ -50,7 +50,7 @@ export function registerSessionHandler(
     socket.join(data.sessionCode);
 
     // Check if user is host, if not check if there is a username to add user to attendees
-    if (sessions.get(data.sessionCode).host != data.userId && data.username != null) {
+    if (sessions.get(data.sessionCode).host != data.userId && data.username != null && data.username != "") {
       sessions.get(data.sessionCode).attendees.set(data.userId, data.username)
 
       socket.data.session = data.sessionCode;
