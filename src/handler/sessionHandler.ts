@@ -25,7 +25,7 @@ export function registerSessionHandler(
       usersConnected: 0,
     });
 
-    socket.emit(EVENTS.SERVER.JOIN_SESSION, {
+    socket.emit(EVENTS.SERVER.CREATE_SESSION, {
       sessionCode: sessionCode,
     });
 
@@ -37,25 +37,51 @@ export function registerSessionHandler(
   };
 
   const joinSession = async (data) => {
-    //  For Khoi!!
-    // TODO: Validate if session is exists and if user is a host, and handle it properly.
+    // Check if session code exists in sessions
+    if (!sessions.has(data.sessionCode)) {
+      socket.emit(EVENTS.SERVER.VALIDATE_SESSION_CODE, {
+        isValid: false,
+      });
 
-    sessions.get(data.sessionCode).attendees.set(data.userId, data.username);
+      // If not found, cancel the join session request
+      return;
+    }
 
-    socket.data.session = data.sessionCode;
-    socket.data.userId = data.userId;
     socket.join(data.sessionCode);
 
-    io.in(data.sessionCode).emit(EVENTS.UPDATE_USERS, {
-      usersConnected: sessions.get(data.sessionCode).attendees.size,
-    });
+    // Check if user is host, if not check if there is a username to add user to attendees
+    if (sessions.get(data.sessionCode).host != data.userId && data.username != null) {
+      sessions.get(data.sessionCode).attendees.set(data.userId, data.username)
+
+      socket.data.session = data.sessionCode;
+      socket.data.userId = data.userId;
+
+      io.in(data.sessionCode).emit(EVENTS.UPDATE_USERS, {
+        usersConnected: sessions.get(data.sessionCode).attendees.size,
+      });
+    } 
+    // If not, cancel the join session request as the user does not have a username
+    else if (sessions.get(data.sessionCode).host != data.userId) {
+      socket.emit(EVENTS.SERVER.VALIDATE_NAME, {
+        isMissing: true,
+      });
+      return;
+    }
 
     socket.emit(EVENTS.SERVER.JOIN_SESSION, {
       sessionCode: data.sessionCode,
+      isHost: sessions.get(data.sessionCode).host === data.userId,
     });
 
-    if (CONFIG.DEBUG) {
-      console.log(`[JOIN_SESSION] ${data.username} joined ${data.sessionCode}`);
+    if (CONFIG.DEBUG && sessions.get(data.sessionCode).host === data.userId) {
+      console.log(
+        `[JOIN_SESSION] ${data.userId} joined ${data.sessionCode} as a host.`
+      );
+      console.log(sessions.get(data.sessionCode));
+    } else if (CONFIG.DEBUG) {
+      console.log(
+        `[JOIN_SESSION] ${data.userId} joined ${data.sessionCode} as an attendee.`
+      );
       console.log(sessions.get(data.sessionCode));
     }
   };
