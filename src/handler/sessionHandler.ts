@@ -50,8 +50,12 @@ export function registerSessionHandler(
     socket.join(data.sessionCode);
 
     // Check if user is host, if not check if there is a username to add user to attendees
-    if (sessions.get(data.sessionCode).host != data.userId && data.username != null && data.username != "") {
-      sessions.get(data.sessionCode).attendees.set(data.userId, data.username)
+    if (
+      sessions.get(data.sessionCode).host != data.userId &&
+      data.username != null &&
+      data.username != ''
+    ) {
+      sessions.get(data.sessionCode).attendees.set(data.userId, data.username);
 
       socket.data.session = data.sessionCode;
       socket.data.userId = data.userId;
@@ -59,7 +63,7 @@ export function registerSessionHandler(
       io.in(data.sessionCode).emit(EVENTS.UPDATE_USERS, {
         usersConnected: sessions.get(data.sessionCode).attendees.size,
       });
-    } 
+    }
     // If not, cancel the join session request as the user does not have a username
     else if (sessions.get(data.sessionCode).host != data.userId) {
       socket.emit(EVENTS.SERVER.VALIDATE_NAME, {
@@ -118,26 +122,27 @@ export function registerSessionHandler(
     const sessionCode = data.sessionCode;
     const userId = data.userId;
 
-    // TODO:
-    // 1. Check if the sessionCode is valid, handle if not
+    // TODO: Handle if the sessionCode is not valid and handle if the user is the host
     if (!sessions.has(sessionCode)) {
       return;
     }
 
-    // 2. Check if the user is the host, and handle if not ??
     if (sessions.get(sessionCode).host !== userId) {
       return;
     }
 
-    // 3. Disconnect all users connected to the session
-    io.in(sessionCode).emit(EVENTS.DISCONNECT_USERS);
+    socket.leave(sessionCode);
 
-    // 4. Remove socket.io room
-    // 5. Remove session from session list
-    // 6. Remove host from hostIDs
-    // 7. Notify client
-    // socket.leave(data.sessionCode);
-    // socket.emit(EVENTS.SERVER.HOST_QUIT_SESSION, data);
+    io.in(sessionCode).emit(EVENTS.SERVER.HOST_QUIT_SESSION);
+    io.in(sessionCode).socketsLeave(sessionCode);
+
+    sessions.delete(sessionCode);
+    if (CONFIG.DEBUG) {
+      console.log(
+        `[HOST_QUIT_SESSION] Host quit session ${sessionCode} and the session is destroyed.`
+      );
+      console.log(sessions);
+    }
   };
 
   socket.on(EVENTS.CLIENT.CREATE_SESSION, createSession);

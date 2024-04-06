@@ -20,20 +20,33 @@ export function registerSocketHandler(
       return;
     }
 
-    if (!sessions.get(sessionCode).attendees.has(userId)) {
-      return;
+    if (sessions.get(sessionCode).attendees.has(userId)) {
+      sessions.get(sessionCode).attendees.delete(userId);
+      socket.leave(sessionCode);
+
+      io.in(sessionCode).emit(EVENTS.UPDATE_USERS, {
+        usersConnected: sessions.get(sessionCode).attendees.size,
+      });
+
+      if (CONFIG.DEBUG) {
+        console.log(`[DISCONNECT] User ${userId} left session ${sessionCode}`);
+        console.log(sessions.get(sessionCode));
+      }
     }
 
-    sessions.get(sessionCode).attendees.delete(userId);
-    socket.leave(sessionCode);
+    if (sessions.get(sessionCode).host === userId) {
+      socket.leave(sessionCode);
 
-    io.in(sessionCode).emit(EVENTS.UPDATE_USERS, {
-      usersConnected: sessions.get(sessionCode).attendees.size,
-    });
+      io.in(sessionCode).emit(EVENTS.SERVER.HOST_QUIT_SESSION);
+      io.in(sessionCode).socketsLeave(sessionCode);
 
-    if (CONFIG.DEBUG) {
-      console.log(`[DISCONNECT] User ${userId} left session ${sessionCode}`);
-      console.log(sessions.get(sessionCode));
+      sessions.delete(sessionCode);
+      if (CONFIG.DEBUG) {
+        console.log(
+          `[DISCONNECT] Host left session ${sessionCode} and the session is destroyed.`
+        );
+        console.log(sessions);
+      }
     }
   };
 
