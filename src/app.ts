@@ -6,6 +6,7 @@ import CONFIG from './config/config';
 import { Session } from './interface/session';
 import { registerSessionHandler } from './handler/sessionHandler';
 import { registerSocketHandler } from './handler/socketHandler';
+import { registerQuizHandler } from './handler/quizHandler';
 
 const app = express();
 const httpServer = createServer(app);
@@ -26,5 +27,6 @@ httpServer.listen(CONFIG.PORT, () => {
   io.on(EVENTS.CONNECTION, (socket: Socket) => {
     registerSocketHandler(io, socket, sessions);
     registerSessionHandler(io, socket, sessions);
+    registerQuizHandler(io, socket, sessions);
   });
 });
