@@ -2,11 +2,14 @@ import { Server, Socket } from "socket.io";
 import EVENTS from "../events/events";
 import CONFIG from "../config/config";
 import { Session } from "../interface/session";
+import { Quiz } from "../interface/quiz";
+import { generateNumQuiz } from "../utils/quizUtils";
 
 export function registerQuizHandler(
   io: Server,
   socket: Socket,
-  sessions: Map<String, Session>
+  sessions: Map<String, Session>,
+  quizzes: Quiz[]
 ) {
   const startQuiz = async (data) => {
     const sessionCode = socket.data.session;
@@ -24,12 +27,19 @@ export function registerQuizHandler(
       return;
     }
 
+    // TODO: CREATE QUIZ
+    const quiz = generateNumQuiz();
+    quizzes.push(quiz);
+
     io.in(sessionCode).emit(EVENTS.SERVER.QUIZ_STARTED, {
-      quiz: "This is a quiz",
+      question: quiz.question,
+      options: quiz.options,
+      answer: quiz.answer
     });
 
     if (CONFIG.DEBUG) {
       console.log(`[START_QUIZ] Quiz started for session ${sessionCode}`);
+      console.log(`[START_QUIZ] Quiz: ${JSON.stringify(quiz)}`);
     }
   };
 
