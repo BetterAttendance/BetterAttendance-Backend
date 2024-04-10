@@ -15,23 +15,20 @@ export function registerQuizHandler(
     const sessionCode = socket.data.session;
     const userId = socket.data.userId;
 
-    if (!sessionCode) {
+    if (
+      !sessionCode ||
+      !sessions.has(sessionCode) ||
+      sessions.get(sessionCode).host != userId
+    ) {
       return;
     }
 
-    if (!sessions.has(sessionCode)) {
-      return;
-    }
-
-    if (sessions.get(sessionCode).host != userId) {
-      return;
-    }
-
-    // TODO: CREATE QUIZ
+    // TODO: CREATE DIFFERENT TYPE OF QUIZZES
     const quiz = generateNumQuiz();
     quizzes.push(quiz);
 
     io.in(sessionCode).emit(EVENTS.SERVER.QUIZ_STARTED, {
+      type: quiz.type,
       question: quiz.question,
       options: quiz.options,
       answer: quiz.answer
