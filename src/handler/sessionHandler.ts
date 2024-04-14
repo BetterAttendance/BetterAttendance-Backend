@@ -7,7 +7,8 @@ import { createSessionInterface, Session } from '../interface/session';
 export function registerSessionHandler(
   io: Server,
   socket: Socket,
-  sessions: Map<String, Session>
+  sessions: Map<String, Session>,
+  answers: Map<String, string>,   //  Map of sessionCode to answer (To check if the quiz has started)
 ) {
   const createSession = async (data) => {
     const nanoid = customAlphabet(
@@ -44,6 +45,17 @@ export function registerSessionHandler(
       });
 
       // If not found, cancel the join session request
+      return;
+    }
+    
+    // Check if the answer map has the sessionCode key, if so, the quiz has started
+    // Prevent the user from joining the session if the quiz has started. Only the host can rejoin
+    if (answers.has(data.sessionCode) && sessions.get(data.sessionCode).host != data.userId) {
+      socket.emit(EVENTS.SERVER.VALIDATE_SESSION_CODE, {
+        isValid: false,
+      });
+
+      // If the quiz has started, cancel the join session request
       return;
     }
 

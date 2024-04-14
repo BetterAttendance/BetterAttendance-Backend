@@ -9,6 +9,7 @@ const EVENTS = {
     ATTENDEE_QUIT_SESSION: `c-session:attendee-quit`,
     CREATE_SESSION: 'c-session:create',
     START_QUIZ: 'c-session:start-quiz',
+    SUBMIT_ANSWER: 'c-session:submit-answer',
   },
   SERVER: {
     JOIN_SESSION: 's-session:join',
@@ -18,6 +19,7 @@ const EVENTS = {
     VALIDATE_SESSION_CODE: 's-session:validate',
     VALIDATE_NAME: 's-session:validate-name',
     QUIZ_STARTED: 's-session:quiz-started',
+    QUIZ_RESULT: 's-session:quiz-result',
   },
 };
 
