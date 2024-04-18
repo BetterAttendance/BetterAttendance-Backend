@@ -20,14 +20,13 @@ const io = new Server(httpServer, {
 });
 
 const sessions = new Map<String, Session>();
-let answers = new Map<String, string>();  // Map of sessionCode to answer
 
 httpServer.listen(CONFIG.PORT, () => {
   console.log(`Server is up and running on port: ${CONFIG.PORT}`);
 
   io.on(EVENTS.CONNECTION, (socket: Socket) => {
     registerSocketHandler(io, socket, sessions);
-    registerSessionHandler(io, socket, sessions, answers);
-    registerQuizHandler(io, socket, sessions, answers);
+    registerSessionHandler(io, socket, sessions);
+    registerQuizHandler(io, socket, sessions);
   });
 });

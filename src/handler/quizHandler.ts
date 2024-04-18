@@ -2,17 +2,16 @@ import { Server, Socket } from "socket.io";
 import EVENTS from "../events/events";
 import CONFIG from "../config/config";
 import { Session } from "../interface/session";
-import { Quiz } from "../interface/quiz";
-import { getRandomInteger, generateNumQuiz, generatePicQuiz, generateTFQuiz } from "../utils/quizUtils";
+import { Quiz, generateNumQuiz, generatePicQuiz, generateTFQuiz } from "../interface/quiz";
+import { getRandomInteger } from "../utils/utils";
 
 export function registerQuizHandler(
   io: Server,
   socket: Socket,
   sessions: Map<String, Session>,
-  answers: Map<String, string>,   //  Map of sessionCode to answer
 ) {
   // Note: We do not save the quiz object, only the answer
-  const startQuiz = async (data) => {
+  const fetchQuiz = async (data) => {
     const sessionCode = socket.data.session;
     const userId = socket.data.userId;
 
@@ -24,39 +23,42 @@ export function registerQuizHandler(
       return;
     }
 
-    // Generate a random number from 0 to 2 to choose the type of quiz
-    const quizTypeOpt = getRandomInteger(2)
-    let quiz: Quiz;
-    switch (quizTypeOpt) {
-      case 0:
+
+    // Generate 4 quizzes for the session
+    const quizzes = [];
+    for (let i = 0; i < 4; i++) {
+      const random = getRandomInteger(2);
+      let quiz: Quiz;
+      if (random === 0) {
         quiz = generateNumQuiz();
-        break;
-      case 1:
-        quiz = generateTFQuiz();
-        break;
-      case 2:
+      } else if (random === 1) {
         quiz = generatePicQuiz();
-        break;
+      } else {
+        quiz = generateTFQuiz();
+      }
+      quizzes.push(quiz);
     }
 
-    io.in(sessionCode).emit(EVENTS.SERVER.QUIZ_STARTED, {
-      type: quiz.type,
-      question: quiz.question,
-      options: quiz.options,
-      answer: quiz.answer
-    });
 
-    // Store the answer for the quiz to validate later
-    answers.set(sessionCode, quiz.answer);
+    // Save the quizzes to the session object
+    sessions.get(sessionCode).quizzes = quizzes;
+
+    // Send the quiz attributes to the clients
+    io.in(sessionCode).emit(EVENTS.SERVER.QUIZ_STARTED, {
+      type: sessions.get(sessionCode).quizzes[0].type,
+      question: sessions.get(sessionCode).quizzes[0].question,
+      options: sessions.get(sessionCode).quizzes[0].options,
+      answer: sessions.get(sessionCode).quizzes[0].answer
+    });
 
     if (CONFIG.DEBUG) {
       console.log(`[START_QUIZ] Quiz started for session ${sessionCode}`);
-      console.log(`[START_QUIZ] Quiz: ${JSON.stringify(quiz)}`);
+      console.log(`[START_QUIZ] Quiz: ${JSON.stringify(sessions.get(sessionCode).quizzes[0])}`);
     }
   };
 
   const validateAnswer = async (data) => {
-    // Receive data: sessionCode, selectedOption
+    // Receive data: sessionCode, opt
     const sessionCode = socket.data.session;
     const userId = socket.data.userId;
 
@@ -65,21 +67,67 @@ export function registerQuizHandler(
       return;
     }
 
-    // If the user did not answer the quiz, we mark it as incorrect
-    // Check if the user response is correct
-    const isCorrect = data.selectedOpt === answers.get(sessionCode);
-    // Get the attendence map of the session and update the user's attendance
-    sessions.get(sessionCode).attendance.set(userId, isCorrect);
+    // Mark the user as answered
+    sessions.get(sessionCode).answeredAttendees += 1;
+
+    // Check if the user answer is correct, if so then increment the correctAnswers counter for the user
+    const quiz = sessions.get(sessionCode).quizzes[0]
+    const isCorrect = quiz.answer === data.opt;
+    if (isCorrect) {
+      sessions.get(sessionCode).attendees.get(userId).correctAns += 1;
+    }
 
     if (CONFIG.DEBUG) {
-      console.log(`[SUBMIT_ANSWER] User ${userId} from session ${sessionCode} submitted answer: ${data.selectedOpt}`);
-      console.log(`[SUBMIT_ANSWER] Answer is correct: ${isCorrect}`);
-      console.log(sessions.get(data.sessionCode));
+      console.log(`[SUBMIT_ANSWER] User ${userId} from session ${sessionCode} submitted answer: ${data.opt} -> ${isCorrect}`);
+      console.log(`[SUBMIT_ANSWER] Quiz: ${JSON.stringify(sessions.get(sessionCode).quizzes[0])}`);
+    }
+
+    // If all users have answered or the timer on the host stops
+    if (sessions.get(sessionCode).attendees.size === sessions.get(sessionCode).answeredAttendees) {
+      sessions.get(sessionCode).quizzes.shift();  // Remove the first quiz from the array
+      sessions.get(sessionCode).answeredAttendees = 0;  // Reset the answered attendees counter
+
+      // If there are more quizzes, send the next quiz to the clients
+      // Otherwise, send end quiz event
+      if (sessions.get(sessionCode).quizzes.length > 0) {
+        if (CONFIG.DEBUG) {
+          console.log(`[NEXT_QUIZ] Sending next quiz to session ${sessionCode}`);
+          console.log(sessions.get(data.sessionCode));
+        }
+
+        io.in(sessionCode).emit(EVENTS.SERVER.NEXT_QUIZ, {
+          type: sessions.get(sessionCode).quizzes[0].type,
+          question: sessions.get(sessionCode).quizzes[0].question,
+          options: sessions.get(sessionCode).quizzes[0].options,
+          answer: sessions.get(sessionCode).quizzes[0].answer
+        });
+      } else {
+        if (CONFIG.DEBUG) {
+          console.log(`[END_QUIZ] Quiz ended for session ${sessionCode}`);
+          console.log(sessions.get(data.sessionCode));
+
+          // Print the final results of all attendees
+          sessions.get(sessionCode).attendees.forEach((value, key) => {
+            console.log(`[END_QUIZ] User ${key} has ${value.correctAns} correct answers.`);
+          });
+        }
+
+        // If the attendees have answered 3 or more questions correctly, mark as attended
+        const attendedUsers = [];
+        sessions.get(sessionCode).attendees.forEach((value, key) => {
+          if (value.correctAns >= 3) {
+            attendedUsers.push(key);
+          }
+        });
+
+        // Send the final results to the clients
+        io.in(sessionCode).emit(EVENTS.SERVER.QUIZ_RESULT, {
+          attendedUsers: attendedUsers,
+        });
+      }
     }
   }
 
-  // TODO: RETURN QUIZ RESULT TO CLIENT (AFTER ALL USERS HAVE ANSWERED OR TIME IS UP)
-
-  socket.on(EVENTS.CLIENT.START_QUIZ, startQuiz);
+  socket.on(EVENTS.CLIENT.START_QUIZ, fetchQuiz);
   socket.on(EVENTS.CLIENT.SUBMIT_ANSWER, validateAnswer);
 }

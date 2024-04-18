@@ -10,6 +10,7 @@ const EVENTS = {
     CREATE_SESSION: 'c-session:create',
     START_QUIZ: 'c-session:start-quiz',
     SUBMIT_ANSWER: 'c-session:submit-answer',
+    NEXT_QUIZ: 'c-session:next-quiz',
   },
   SERVER: {
     JOIN_SESSION: 's-session:join',
@@ -20,6 +21,8 @@ const EVENTS = {
     VALIDATE_NAME: 's-session:validate-name',
     QUIZ_STARTED: 's-session:quiz-started',
     QUIZ_RESULT: 's-session:quiz-result',
+    NEXT_QUIZ: 's-session:next-quiz',
+    END_QUIZ: 's-session:end-quiz',
   },
 };
 

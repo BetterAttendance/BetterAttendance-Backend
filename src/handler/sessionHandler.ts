@@ -3,12 +3,12 @@ import { customAlphabet } from 'nanoid';
 import EVENTS from '../events/events';
 import CONFIG from '../config/config';
 import { createSessionInterface, Session } from '../interface/session';
+import { Attendee, createAttendeeInterface } from '../interface/attendee';
 
 export function registerSessionHandler(
   io: Server,
   socket: Socket,
   sessions: Map<String, Session>,
-  answers: Map<String, string>,   //  Map of sessionCode to answer (To check if the quiz has started)
 ) {
   const createSession = async (data) => {
     const nanoid = customAlphabet(
@@ -48,15 +48,14 @@ export function registerSessionHandler(
       return;
     }
     
-    // Check if the answer map has the sessionCode key, if so, the quiz has started
     // Prevent the user from joining the session if the quiz has started. Only the host can rejoin
-    if (answers.has(data.sessionCode) && sessions.get(data.sessionCode).host != data.userId) {
-      socket.emit(EVENTS.SERVER.VALIDATE_SESSION_CODE, {
-        isValid: false,
-      });
-
-      // If the quiz has started, cancel the join session request
-      return;
+    if (sessions.get(data.sessionCode).quizzes.length > 0) {
+      if (sessions.get(data.sessionCode).host != data.userId) {
+        socket.emit(EVENTS.SERVER.VALIDATE_SESSION_CODE, {
+          isValid: false,
+        });
+        return;
+      }
     }
 
     socket.join(data.sessionCode);
@@ -67,7 +66,8 @@ export function registerSessionHandler(
       data.username != null &&
       data.username != ''
     ) {
-      sessions.get(data.sessionCode).attendees.set(data.userId, data.username);
+      const attendee = createAttendeeInterface({username: data.username});
+      sessions.get(data.sessionCode).attendees.set(data.userId, attendee);
 
       socket.data.session = data.sessionCode;
       socket.data.userId = data.userId;
@@ -111,7 +111,7 @@ export function registerSessionHandler(
       return;
     }
 
-    if (!sessions.get(sessionCode).attendees.has(userId)) {
+    if (sessions.get(sessionCode).attendees.has(userId)) {
       return;
     }
 
