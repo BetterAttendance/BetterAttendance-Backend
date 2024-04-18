@@ -10,7 +10,6 @@ export function registerQuizHandler(
   socket: Socket,
   sessions: Map<String, Session>,
 ) {
-  // Note: We do not save the quiz object, only the answer
   const fetchQuiz = async (data) => {
     const sessionCode = socket.data.session;
     const userId = socket.data.userId;
@@ -22,7 +21,6 @@ export function registerQuizHandler(
     ) {
       return;
     }
-
 
     // Generate 4 quizzes for the session
     const quizzes = [];
@@ -38,7 +36,6 @@ export function registerQuizHandler(
       }
       quizzes.push(quiz);
     }
-
 
     // Save the quizzes to the session object
     sessions.get(sessionCode).quizzes = quizzes;
@@ -56,6 +53,7 @@ export function registerQuizHandler(
       console.log(`[START_QUIZ] Quiz: ${JSON.stringify(sessions.get(sessionCode).quizzes[0])}`);
     }
   };
+
 
   const validateAnswer = async (data) => {
     // Receive data: sessionCode, opt
@@ -116,18 +114,76 @@ export function registerQuizHandler(
         const attendedUsers = [];
         sessions.get(sessionCode).attendees.forEach((value, key) => {
           if (value.correctAns >= 3) {
-            attendedUsers.push(key);
+            attendedUsers.push(value.username);
           }
         });
 
         // Send the final results to the clients
-        io.in(sessionCode).emit(EVENTS.SERVER.QUIZ_RESULT, {
+        io.in(sessionCode).emit(EVENTS.SERVER.END_QUIZ, {
           attendedUsers: attendedUsers,
         });
       }
     }
   }
 
+  const sendNextQuiz = async (data) => {
+    const sessionCode = socket.data.session;
+    const userId = socket.data.userId;
+
+    if (
+      !sessionCode ||
+      !sessions.has(sessionCode) ||
+      sessions.get(sessionCode).host != userId
+    ) {
+      return;
+    }
+
+    sessions.get(sessionCode).quizzes.shift();  // Remove the first quiz from the array
+    sessions.get(sessionCode).answeredAttendees = 0;  // Reset the answered attendees counter
+
+    if (sessions.get(sessionCode).quizzes.length != 0) {
+      io.in(sessionCode).emit(EVENTS.SERVER.NEXT_QUIZ, {
+        type: sessions.get(sessionCode).quizzes[0].type,
+        question: sessions.get(sessionCode).quizzes[0].question,
+        options: sessions.get(sessionCode).quizzes[0].options,
+        answer: sessions.get(sessionCode).quizzes[0].answer
+      });
+
+      if (CONFIG.DEBUG) {
+        console.log(`[NEXT_QUIZ] Time up. Sending next quiz to session ${sessionCode}`);
+        console.log(sessions.get(data.sessionCode));
+      }
+    } else {
+      if (CONFIG.DEBUG) {
+        console.log(`[END_QUIZ] Quiz ended for session ${sessionCode}`);
+        console.log(sessions.get(data.sessionCode));
+
+        // Print the final results of all attendees
+        sessions.get(sessionCode).attendees.forEach((value, key) => {
+          console.log(`[END_QUIZ] User ${key} has ${value.correctAns} correct answers.`);
+        });
+      }
+
+      // If the attendees have answered 3 or more questions correctly, mark as attended
+      const recordedUsers = [];
+      const unrecordedUsers = [];
+      sessions.get(sessionCode).attendees.forEach((value, key) => {
+        if (value.correctAns >= 3) {
+          recordedUsers.push(value.username);
+        } else {
+          unrecordedUsers.push(value.username);
+        }
+      });
+
+      // Send the final results to the clients
+      io.in(sessionCode).emit(EVENTS.SERVER.END_QUIZ, {
+        recordedUsers: recordedUsers,
+        unrecordedUsers: unrecordedUsers,
+      });
+    }
+  }
+
   socket.on(EVENTS.CLIENT.START_QUIZ, fetchQuiz);
+  socket.on(EVENTS.CLIENT.NEXT_QUIZ, sendNextQuiz);
   socket.on(EVENTS.CLIENT.SUBMIT_ANSWER, validateAnswer);
 }
