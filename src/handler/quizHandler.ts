@@ -111,18 +111,22 @@ export function registerQuizHandler(
         }
 
         // If the attendees have answered 3 or more questions correctly, mark as attended
-        const attendedUsers = [];
+        const recordedUsers = [];
+        const unrecordedUsers = [];
         sessions.get(sessionCode).attendees.forEach((value, key) => {
           if (value.correctAns >= 3) {
-            attendedUsers.push(value.username);
+            recordedUsers.push(value.username);
+          } else {
+            unrecordedUsers.push(value.username);
           }
         });
 
         // Send the final results to the clients
         io.in(sessionCode).emit(EVENTS.SERVER.END_QUIZ, {
-          attendedUsers: attendedUsers,
+          recordedUsers: recordedUsers,
+          unrecordedUsers: unrecordedUsers,
         });
-      }
+        }
     }
   }
 
