@@ -116,30 +116,6 @@ export function registerQuizHandler(
       console.log(`[SUBMIT_ANSWER] User ${userId} from session ${sessionCode} submitted answer: ${data.opt} -> ${isCorrect}`);
       console.log(`[SUBMIT_ANSWER] Quiz: ${JSON.stringify(sessions.get(sessionCode).quizzes[0])}`);
     }
-
-    // If all users have answered or the timer on the host stops
-    if (sessions.get(sessionCode).attendees.size === sessions.get(sessionCode).answeredAttendees) {
-      sessions.get(sessionCode).quizzes.shift();  // Remove the first quiz from the array
-      sessions.get(sessionCode).answeredAttendees = 0;  // Reset the answered attendees counter
-
-      // If there are more quizzes, send the next quiz to the clients
-      // Otherwise, send end quiz event
-      if (sessions.get(sessionCode).quizzes.length > 0) {
-        if (CONFIG.DEBUG) {
-          console.log(`[NEXT_QUIZ] Sending next quiz to session ${sessionCode}`);
-          console.log(sessions.get(data.sessionCode));
-        }
-
-        io.in(sessionCode).emit(EVENTS.SERVER.NEXT_QUIZ, {
-          type: sessions.get(sessionCode).quizzes[0].type,
-          question: sessions.get(sessionCode).quizzes[0].question,
-          options: sessions.get(sessionCode).quizzes[0].options,
-          answer: sessions.get(sessionCode).quizzes[0].answer
-        });
-      } else {
-        sendResults(data);
-      }
-    }
   }
 
 
