@@ -54,6 +54,43 @@ export function registerQuizHandler(
     }
   };
 
+  const sendResults = async (data) => {
+    const sessionCode = socket.data.session;
+
+    if (CONFIG.DEBUG) {
+      console.log(`[END_QUIZ] Quiz ended for session ${sessionCode}`);
+      console.log(sessions.get(data.sessionCode));
+
+      // Print the final results of all attendees
+      sessions.get(sessionCode).attendees.forEach((value, key) => {
+        console.log(`[END_QUIZ] User ${key} has ${value.correctAns} correct answers.`);
+      });
+    }
+
+    // If the attendees have answered 3 or more questions correctly, mark as attended
+    // To Host
+    const recordedUsers = [];     // Recorded names
+    const unrecordedUsers = [];   // Unrecorded names
+    
+    // To Attendees
+    const recordedIds = [];   // Recorded ids to check if the user is recorded
+    sessions.get(sessionCode).attendees.forEach((value, key) => {
+      if (value.correctAns >= 3) {
+        recordedUsers.push(value.username);
+        recordedIds.push(key);
+      } else {
+        unrecordedUsers.push(value.username);
+      }
+    });
+
+    // Send the final results to the clients
+    io.in(sessionCode).emit(EVENTS.SERVER.END_QUIZ, {
+      recordedUsers: recordedUsers,
+      unrecordedUsers: unrecordedUsers,
+      recordedIds: recordedIds
+    });
+  }
+
 
   const validateAnswer = async (data) => {
     // Receive data: sessionCode, opt
@@ -100,35 +137,11 @@ export function registerQuizHandler(
           answer: sessions.get(sessionCode).quizzes[0].answer
         });
       } else {
-        if (CONFIG.DEBUG) {
-          console.log(`[END_QUIZ] Quiz ended for session ${sessionCode}`);
-          console.log(sessions.get(data.sessionCode));
-
-          // Print the final results of all attendees
-          sessions.get(sessionCode).attendees.forEach((value, key) => {
-            console.log(`[END_QUIZ] User ${key} has ${value.correctAns} correct answers.`);
-          });
-        }
-
-        // If the attendees have answered 3 or more questions correctly, mark as attended
-        const recordedUsers = [];
-        const unrecordedUsers = [];
-        sessions.get(sessionCode).attendees.forEach((value, key) => {
-          if (value.correctAns >= 3) {
-            recordedUsers.push(value.username);
-          } else {
-            unrecordedUsers.push(value.username);
-          }
-        });
-
-        // Send the final results to the clients
-        io.in(sessionCode).emit(EVENTS.SERVER.END_QUIZ, {
-          recordedUsers: recordedUsers,
-          unrecordedUsers: unrecordedUsers,
-        });
-        }
+        sendResults(data);
+      }
     }
   }
+
 
   const sendNextQuiz = async (data) => {
     const sessionCode = socket.data.session;
@@ -158,32 +171,7 @@ export function registerQuizHandler(
         console.log(sessions.get(data.sessionCode));
       }
     } else {
-      if (CONFIG.DEBUG) {
-        console.log(`[END_QUIZ] Quiz ended for session ${sessionCode}`);
-        console.log(sessions.get(data.sessionCode));
-
-        // Print the final results of all attendees
-        sessions.get(sessionCode).attendees.forEach((value, key) => {
-          console.log(`[END_QUIZ] User ${key} has ${value.correctAns} correct answers.`);
-        });
-      }
-
-      // If the attendees have answered 3 or more questions correctly, mark as attended
-      const recordedUsers = [];
-      const unrecordedUsers = [];
-      sessions.get(sessionCode).attendees.forEach((value, key) => {
-        if (value.correctAns >= 3) {
-          recordedUsers.push(value.username);
-        } else {
-          unrecordedUsers.push(value.username);
-        }
-      });
-
-      // Send the final results to the clients
-      io.in(sessionCode).emit(EVENTS.SERVER.END_QUIZ, {
-        recordedUsers: recordedUsers,
-        unrecordedUsers: unrecordedUsers,
-      });
+      sendResults(data);
     }
   }
 
