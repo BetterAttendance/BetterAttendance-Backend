@@ -19,7 +19,7 @@ const io = new Server(httpServer, {
   maxHttpBufferSize: 1e8,
 });
 
-const sessions = new Map<String, Session>();
+const sessions = new Map<string, Session>();
 
 httpServer.listen(CONFIG.PORT, () => {
   console.log(`Server is up and running on port: ${CONFIG.PORT}`);
