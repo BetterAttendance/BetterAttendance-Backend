@@ -11,6 +11,7 @@ const EVENTS = {
     START_QUIZ: 'c-session:start-quiz',
     SUBMIT_ANSWER: 'c-session:submit-answer',
     NEXT_QUIZ: 'c-session:next-quiz',
+    END_QUIZ: 'c-session:end-quiz',
   },
   SERVER: {
     JOIN_SESSION: 's-session:join',
