@@ -48,28 +48,23 @@ export function registerSessionHandler(
       return;
     }
 
+    // Prevent the user from joining the session if the quiz has started except for the host
     if (sessions.get(data.sessionCode).status === 'running') {
-      socket.emit(EVENTS.SERVER.VALIDATE_SESSION_CODE, {
-        isValid: false,
-        error: `The attendance of session ${data.sessionCode} has already started. You cannot join any further.`
-      });
-      return;
-    } else if (sessions.get(data.sessionCode).status === 'ended') {
-      socket.emit(EVENTS.SERVER.VALIDATE_SESSION_CODE, {
-        isValid: false,
-        error: `The attendance of session ${data.sessionCode} has already ended. You cannot join any further.`
-      });
-      return;
-    }
-    
-    // Prevent the user from joining the session if the quiz has started. Only the host can rejoin
-    if (sessions.get(data.sessionCode).quizzes.length > 0) {
       if (sessions.get(data.sessionCode).host != data.userId) {
         socket.emit(EVENTS.SERVER.VALIDATE_SESSION_CODE, {
           isValid: false,
+          errorMsg: `The quiz for session ${data.sessionCode} has already started. You cannot join any further.`
         });
         return;
       }
+    } 
+    // Prevent the user from joining the session if the attendance has ended
+    else if (sessions.get(data.sessionCode).status === 'ended') {
+      socket.emit(EVENTS.SERVER.VALIDATE_SESSION_CODE, {
+        isValid: false,
+        errorMsg: `The attendance of session ${data.sessionCode} has already ended. You cannot join any further.`
+      });
+      return;
     }
 
     socket.join(data.sessionCode);
@@ -94,7 +89,7 @@ export function registerSessionHandler(
     else if (sessions.get(data.sessionCode).host != data.userId) {
       socket.emit(EVENTS.SERVER.VALIDATE_SESSION_CODE, {
         isValid: false,
-        error: 'Please provide a username to join the session.',
+        errorMsg: 'Please provide a username to join the session.',
       });
       return;
     }
