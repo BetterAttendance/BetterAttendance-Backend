@@ -47,6 +47,20 @@ export function registerSessionHandler(
       // If not found, cancel the join session request
       return;
     }
+
+    if (sessions.get(data.sessionCode).status === 'running') {
+      socket.emit(EVENTS.SERVER.VALIDATE_SESSION_CODE, {
+        isValid: false,
+        error: `The attendance of session ${data.sessionCode} has already started. You cannot join any further.`
+      });
+      return;
+    } else if (sessions.get(data.sessionCode).status === 'ended') {
+      socket.emit(EVENTS.SERVER.VALIDATE_SESSION_CODE, {
+        isValid: false,
+        error: `The attendance of session ${data.sessionCode} has already ended. You cannot join any further.`
+      });
+      return;
+    }
     
     // Prevent the user from joining the session if the quiz has started. Only the host can rejoin
     if (sessions.get(data.sessionCode).quizzes.length > 0) {
@@ -78,8 +92,9 @@ export function registerSessionHandler(
     }
     // If not, cancel the join session request as the user does not have a username
     else if (sessions.get(data.sessionCode).host != data.userId) {
-      socket.emit(EVENTS.SERVER.VALIDATE_NAME, {
-        isMissing: true,
+      socket.emit(EVENTS.SERVER.VALIDATE_SESSION_CODE, {
+        isValid: false,
+        error: 'Please provide a username to join the session.',
       });
       return;
     }

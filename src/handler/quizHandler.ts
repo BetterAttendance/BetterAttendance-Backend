@@ -22,6 +22,9 @@ export function registerQuizHandler(
       return;
     }
 
+    // Set the session status to 'running' to prevent further joins
+    sessions.get(sessionCode).status = "running";
+
     // Generate 4 quizzes for the session
     const quizzes = [];
     for (let i = 0; i < 4; i++) {
@@ -102,24 +105,26 @@ export function registerQuizHandler(
       console.log(sessions.get(data.sessionCode));
     }
 
-    // To host
+    // If there are more quizzes, send the next quiz to the clients
     if (sessions.get(sessionCode).quizzes.length != 0) {
+      // To host
       io.in(sessionCode).emit(EVENTS.SERVER.NEXT_QUIZ, {
         type: sessions.get(sessionCode).quizzes[0].type,
         question: sessions.get(sessionCode).quizzes[0].question,
         options: sessions.get(sessionCode).quizzes[0].options,
         answer: sessions.get(sessionCode).quizzes[0].answer
       });
-    }
 
-    // To all attendees
-    if (sessions.get(sessionCode).quizzes.length != 0) {
+      // To all attendees
       io.in(sessionCode).except(socket.id).emit(EVENTS.SERVER.NEXT_QUIZ, {
         type: sessions.get(sessionCode).quizzes[0].type,
         question: sessions.get(sessionCode).quizzes[0].question,
         options: sessions.get(sessionCode).quizzes[0].options,
       });
     } else {
+      // If there are no more quizzes, end the quiz
+      sessions.get(sessionCode).status = "ended";
+
       // Notify the host and attendees that the quiz has ended
       io.in(sessionCode).emit(EVENTS.SERVER.END_QUIZ);
       console.log(`[NEXT_QUIZ] Quiz ended for session ${sessionCode}`);
