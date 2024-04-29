@@ -3,11 +3,12 @@ import { customAlphabet } from 'nanoid';
 import EVENTS from '../events/events';
 import CONFIG from '../config/config';
 import { createSessionInterface, Session } from '../interface/session';
+import { Attendee, createAttendeeInterface } from '../interface/attendee';
 
 export function registerSessionHandler(
   io: Server,
   socket: Socket,
-  sessions: Map<String, Session>
+  sessions: Map<String, Session>,
 ) {
   const createSession = async (data) => {
     const nanoid = customAlphabet(
@@ -41,9 +42,33 @@ export function registerSessionHandler(
     if (!sessions.has(data.sessionCode)) {
       socket.emit(EVENTS.SERVER.VALIDATE_SESSION_CODE, {
         isValid: false,
+        errorMsg: `Session ${data.sessionCode} does not exist. Please check the session code and try again.`,
       });
 
       // If not found, cancel the join session request
+      return;
+    }
+    
+    // Prevent the user from joining the session if the quiz has started except for the host
+    if (sessions.get(data.sessionCode).status === 'running') {
+      if (sessions.get(data.sessionCode).host != data.userId) {
+        // Send the error message to the front end and display with a toast
+        socket.emit(EVENTS.SERVER.VALIDATE_SESSION_CODE, {
+          isValid: false,
+          errorMsg: `The quiz for session ${data.sessionCode} has already started. You cannot join any further.`
+        });
+
+        return;
+      }
+    } 
+    // Prevent the user from joining the session if the attendance has ended
+    else if (sessions.get(data.sessionCode).status === 'ended') {
+    // Send the error message to the front end and display with a toast
+      socket.emit(EVENTS.SERVER.VALIDATE_SESSION_CODE, {
+        isValid: false,
+        errorMsg: `The attendance of session ${data.sessionCode} has already ended. You cannot join any further.`
+      });
+
       return;
     }
 
@@ -55,7 +80,8 @@ export function registerSessionHandler(
       data.username != null &&
       data.username != ''
     ) {
-      sessions.get(data.sessionCode).attendees.set(data.userId, data.username);
+      const attendee = createAttendeeInterface({username: data.username});
+      sessions.get(data.sessionCode).attendees.set(data.userId, attendee);
 
       socket.data.session = data.sessionCode;
       socket.data.userId = data.userId;
@@ -66,8 +92,9 @@ export function registerSessionHandler(
     }
     // If not, cancel the join session request as the user does not have a username
     else if (sessions.get(data.sessionCode).host != data.userId) {
-      socket.emit(EVENTS.SERVER.VALIDATE_NAME, {
-        isMissing: true,
+      socket.emit(EVENTS.SERVER.VALIDATE_SESSION_CODE, {
+        isValid: false,
+        errorMsg: 'Please provide a username to join the session.',
       });
       return;
     }
@@ -99,7 +126,7 @@ export function registerSessionHandler(
       return;
     }
 
-    if (!sessions.get(sessionCode).attendees.has(userId)) {
+    if (sessions.get(sessionCode).attendees.has(userId)) {
       return;
     }
 
