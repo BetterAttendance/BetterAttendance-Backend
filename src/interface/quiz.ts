@@ -1,5 +1,6 @@
 import { getRandomInteger } from '../utils/utils';
 import CONFIG from '../config/config';
+import OBJECT_BANK from '../utils/object_bank';
 
 export interface Quiz {
   type: string;
@@ -17,33 +18,37 @@ export function createQuizInterface(data: Partial<Quiz> = {}): Quiz {
   // Handling different types of quizzes
   switch (data.type) {
     case CONFIG.QUIZ.TYPE.PICS:
-      options = data.options || ['pic_1.gif', 'pic_2.gif', 'pic_3.gif'];
-      answer = data.answer || 'pic_1';
+      question = 'Choose the correct picture shown on the host screen';
+      options = data.options;
+      answer = data.answer;
       break;
-    case CONFIG.QUIZ.TYPE.TF:
-      question = data.question || 'Is the sky blue?';
-      options = data.options || ['True', 'False'];
-      answer = data.answer || 'True';
+    case CONFIG.QUIZ.TYPE.OBJECT:
+      question = 'Choose the correct object shown on the host screen';
+      options = data.options;
+      answer = data.answer;
       break;
-    // Add more cases for other types if needed
-    // Default is multiple choice
+    case CONFIG.QUIZ.TYPE.NUMBER:
+      question = 'Choose the correct number shown on the host screen';
+      options = data.options;
+      answer = data.answer;
+      break;
+
     default:
-      // Default to multiple choice if type is not specified or invalid
-      question = data.question || 'Choose the correct number:';
-      options = data.options || ['1', '2', '3'];
-      answer = data.answer || '1';
+      question = 'What is the answer to life, the universe, and everything?';
+      options = ['69420'];
+      answer = '69420';
       break;
   }
 
   return {
-    type: data.type || CONFIG.QUIZ.TYPE.NUMBER,
-    question: data.question || null,
+    type: data.type || 'undefined',
+    question: question,
     options: options,
     answer: answer,
   };
 }
 
-export function generateNumQuiz() {
+export function generateNumberQuiz() {
   const options = [];
 
   for (let i = 0; i < CONFIG.QUIZ.MAX_OPTIONS; i++) {
@@ -58,24 +63,29 @@ export function generateNumQuiz() {
   });
 }
 
-export function generateTFQuiz() {
-  const question = 'Is Japan an island';
-  const answer = 'False';
+export function generateObjectQuiz() {
+  const options = [];
+
+  for (let i = 0; i < CONFIG.QUIZ.MAX_OPTIONS; i++) {
+    options.push(OBJECT_BANK[getRandomInteger(OBJECT_BANK.length) - 1]);
+  }
+  const answer = options[getRandomInteger(options.length - 1)];
 
   return createQuizInterface({
-    type: CONFIG.QUIZ.TYPE.TF,
-    question: question,
+    type: CONFIG.QUIZ.TYPE.OBJECT,
+    options: options,
     answer: answer,
   });
 }
 
+// TODO: Implement the generatePicsQuiz function
 export function generatePicsQuiz() {
   // Generate 3 random unrepeating numbers from 1 to 4 to display 3 pictures on the client side
   const options = [];
-  for (let i = 0; i < 3; i++) {
-    let randomNum = getRandomInteger(3) + 1;
+  for (let i = 0; i < CONFIG.QUIZ.MAX_OPTIONS; i++) {
+    let randomNum = getRandomInteger(CONFIG.QUIZ.MAX_PICS) + 1;
     while (options.includes(`pic_${randomNum}.gif`)) {
-      randomNum = getRandomInteger(3) + 1;
+      randomNum = getRandomInteger(CONFIG.QUIZ.MAX_PICS) + 1;
     }
     options.push(`pic_${randomNum}.gif`);
   }

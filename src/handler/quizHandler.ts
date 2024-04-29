@@ -4,9 +4,9 @@ import CONFIG from '../config/config';
 import { Session } from '../interface/session';
 import {
   Quiz,
-  generateNumQuiz,
+  generateNumberQuiz,
   generatePicsQuiz,
-  generateTFQuiz,
+  generateObjectQuiz,
 } from '../interface/quiz';
 import { getRandomInteger } from '../utils/utils';
 
@@ -33,19 +33,16 @@ export function registerQuizHandler(
     // Tell the attendees to switch to quiz mode
     io.in(sessionCode).emit(EVENTS.SERVER.START_QUIZ);
 
-    // Generate 4 quizzes for the session
     const quizzes = [];
-    for (let i = 0; i < 4; i++) {
-      const random = getRandomInteger(2);
-      let quiz: Quiz;
-      if (random === 0) {
-        quiz = generateNumQuiz();
-      } else if (random === 1) {
-        quiz = generatePicsQuiz();
-      } else {
-        quiz = generateTFQuiz();
-      }
-      quizzes.push(quiz);
+    const quiz_types: (() => Quiz)[] = [
+      generateNumberQuiz,
+      generatePicsQuiz,
+      generateObjectQuiz,
+    ];
+
+    for (let i = 0; i < CONFIG.QUIZ.MAX_QUESTIONS; i++) {
+      const index = getRandomInteger(quiz_types.length - 1);
+      quizzes.push(quiz_types[index]());
     }
 
     // Save the quizzes to the session object
