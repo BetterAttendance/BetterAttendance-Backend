@@ -42,6 +42,7 @@ export function registerSessionHandler(
     if (!sessions.has(data.sessionCode)) {
       socket.emit(EVENTS.SERVER.VALIDATE_SESSION_CODE, {
         isValid: false,
+        errorMsg: `Session ${data.sessionCode} does not exist. Please check the session code and try again.`,
       });
 
       // If not found, cancel the join session request

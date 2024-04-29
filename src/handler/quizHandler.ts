@@ -25,6 +25,9 @@ export function registerQuizHandler(
     // Set the session status to 'running' to prevent further joins
     sessions.get(sessionCode).status = "running";
 
+    // Tell the attendees to switch to quiz mode
+    io.in(sessionCode).emit(EVENTS.SERVER.START_QUIZ);
+
     // Generate 4 quizzes for the session
     const quizzes = [];
     for (let i = 0; i < 4; i++) {
