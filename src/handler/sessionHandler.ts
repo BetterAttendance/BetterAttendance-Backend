@@ -48,23 +48,27 @@ export function registerSessionHandler(
       // If not found, cancel the join session request
       return;
     }
-
+    
     // Prevent the user from joining the session if the quiz has started except for the host
     if (sessions.get(data.sessionCode).status === 'running') {
       if (sessions.get(data.sessionCode).host != data.userId) {
+        // Send the error message to the front end and display with a toast
         socket.emit(EVENTS.SERVER.VALIDATE_SESSION_CODE, {
           isValid: false,
           errorMsg: `The quiz for session ${data.sessionCode} has already started. You cannot join any further.`
         });
+
         return;
       }
     } 
     // Prevent the user from joining the session if the attendance has ended
     else if (sessions.get(data.sessionCode).status === 'ended') {
+    // Send the error message to the front end and display with a toast
       socket.emit(EVENTS.SERVER.VALIDATE_SESSION_CODE, {
         isValid: false,
         errorMsg: `The attendance of session ${data.sessionCode} has already ended. You cannot join any further.`
       });
+
       return;
     }
 
