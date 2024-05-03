@@ -9,6 +9,9 @@ const EVENTS = {
     ATTENDEE_QUIT_SESSION: `c-session:attendee-quit`,
     CREATE_SESSION: 'c-session:create',
     START_QUIZ: 'c-session:start-quiz',
+    SUBMIT_ANSWER: 'c-session:submit-answer',
+    NEXT_QUIZ: 'c-session:next-quiz',
+    END_QUIZ: 'c-session:end-quiz',
   },
   SERVER: {
     JOIN_SESSION: 's-session:join',
@@ -16,8 +19,11 @@ const EVENTS = {
     ATTENDEE_QUIT_SESSION: `s-session:attendee-quit`,
     CREATE_SESSION: 's-session:create',
     VALIDATE_SESSION_CODE: 's-session:validate',
-    VALIDATE_NAME: 's-session:validate-name',
+    START_QUIZ: 's-session:start-quiz', // To tell the attendee front-end to switch to quiz mode
     QUIZ_STARTED: 's-session:quiz-started',
+    QUIZ_RESULT: 's-session:quiz-result',
+    NEXT_QUIZ: 's-session:next-quiz',
+    END_QUIZ: 's-session:end-quiz',
   },
 };
 
