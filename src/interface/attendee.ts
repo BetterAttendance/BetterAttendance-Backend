@@ -1,6 +1,6 @@
 export interface Attendee {
   username: string;
-  correctAns: Number;
+  correctAns: number;
 }
 
 export function createAttendeeInterface(
