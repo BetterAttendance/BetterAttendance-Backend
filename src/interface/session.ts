@@ -5,7 +5,7 @@ export interface Session {
   host: string;
   title: string;
   status: string; // 'waiting', 'running', 'ended'
-  attendees: Map<String, Attendee>;
+  attendees: Map<string, Attendee>;
   quizzes: Quiz[];
   answeredAttendees: number;
 }
@@ -15,7 +15,7 @@ export function createSessionInterface(data: Partial<Session> = {}): Session {
     host: data.host,
     title: data.title || 'My Attendance',
     status: data.status || 'waiting',
-    attendees: data.attendees || new Map<String, Attendee>(),
+    attendees: data.attendees || new Map<string, Attendee>(),
     quizzes: [],
     answeredAttendees: 0,
   };

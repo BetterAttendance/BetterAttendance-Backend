@@ -12,6 +12,7 @@ const CONFIG = {
       OBJECT: 'object',
     },
   },
+  OUTPUT_DIR: './output',
 };
 
 export default CONFIG;

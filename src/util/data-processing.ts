@@ -3,8 +3,9 @@ import fs from 'fs';
 import { Session } from '../interface/session';
 import { Attendee } from '../interface/attendee';
 import path from 'path';
+import CONFIG from '../config/config';
 
-const directory = './output';
+const dir = CONFIG.OUTPUT_DIR;
 
 const convertAttendeesToArray = (attendees: Map<string, Attendee>) => {
   const attendeesArray = [];
@@ -24,11 +25,11 @@ const convertAttendeesToArray = (attendees: Map<string, Attendee>) => {
 export function generateSessionCSV(sessionCode: string, session: Session) {
   const attendeesArray = convertAttendeesToArray(session.attendees);
 
-  if (!fs.existsSync(directory)) {
-    fs.mkdirSync(directory);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir);
   }
 
-  const filePath = path.join(directory, sessionCode + '.csv');
+  const filePath = path.join(dir, sessionCode + '.csv');
 
   // Convert the data to CSV format
   stringify(attendeesArray, { header: true }, (err, output) => {
