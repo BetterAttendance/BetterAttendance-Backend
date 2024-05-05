@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "nodemon --config nodemon.json src/app.ts",
     "start": "node -r ts-node/register src/app.ts",
-    "clean": "rm -rf node_modules/",
-    "clean-win": "rmdir /s /q .\\node_modules"
+    "clean": "rm -rf node_modules/ output/",
+    "clean-win": "rmdir /s /q .\\node_modules .\\output"
   },
   "author": "Andrew Jujun, Khoi Tran",
   "license": "ISC",
