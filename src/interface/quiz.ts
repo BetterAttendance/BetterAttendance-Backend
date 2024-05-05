@@ -1,6 +1,6 @@
-import { getRandomInteger } from '../utils/utils';
+import { getRandomInteger } from '../util/utils';
 import CONFIG from '../config/config';
-import OBJECT_BANK from '../utils/object_bank';
+import OBJECT_BANK from '../util/objectBank';
 
 export interface Quiz {
   type: string;

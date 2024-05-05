@@ -25,9 +25,9 @@ const sessions = new Map<string, Session>();
 app.get('/download_csv/:filename', (req, res) => {
   const { filename } = req.params;
 
-  const filePath = path.join(CONFIG.OUTPUT_DIR, filename + '.txt'); // Specify the file path
+  const filePath = path.join(CONFIG.OUTPUT_DIR, filename + '.csv'); // Specify the file path
 
-  res.download(filePath, filename + '.txt', (err) => {
+  res.download(filePath, filename + '.csv', (err) => {
     if (err) {
       console.error('File download failed:', err);
     }

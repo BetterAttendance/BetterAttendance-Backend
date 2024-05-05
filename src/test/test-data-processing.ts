@@ -1,7 +1,7 @@
 import { Attendee, createAttendeeInterface } from '../interface/attendee';
 import { createSessionInterface, Session } from '../interface/session';
 import { customAlphabet, nanoid } from 'nanoid';
-import { generateSessionCSV } from '../util/data-processing';
+import { generateSessionCSV } from '../util/dataProcessing';
 
 const sessions = new Map<string, Session>();
 

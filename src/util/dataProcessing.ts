@@ -4,6 +4,7 @@ import { Session } from '../interface/session';
 import { Attendee } from '../interface/attendee';
 import path from 'path';
 import CONFIG from '../config/config';
+import { nanoid } from 'nanoid';
 
 const dir = CONFIG.OUTPUT_DIR;
 
@@ -24,12 +25,13 @@ const convertAttendeesToArray = (attendees: Map<string, Attendee>) => {
 
 export function generateSessionCSV(sessionCode: string, session: Session) {
   const attendeesArray = convertAttendeesToArray(session.attendees);
+  const downloadCode = nanoid();
 
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir);
   }
 
-  const filePath = path.join(dir, sessionCode + '.csv');
+  const filePath = path.join(dir, downloadCode + '.csv');
 
   // Convert the data to CSV format
   stringify(attendeesArray, { header: true }, (err, output) => {
@@ -52,7 +54,11 @@ export function generateSessionCSV(sessionCode: string, session: Session) {
         console.error('Error:', err);
         return;
       }
-      console.log('CSV file generated successfully!');
+
+      if (CONFIG.DEBUG) {
+        console.log('[generateSessionCSV] CSV file generated successfully!');
+      }
     });
   });
+  return downloadCode;
 }

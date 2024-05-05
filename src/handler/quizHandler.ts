@@ -8,7 +8,10 @@ import {
   generatePicsQuiz,
   generateObjectQuiz,
 } from '../interface/quiz';
-import { getRandomInteger } from '../utils/utils';
+import { getRandomInteger } from '../util/utils';
+import { generateSessionCSV } from '../util/dataProcessing';
+import fs from 'fs';
+import path from 'path';
 
 export function registerQuizHandler(
   io: Server,
@@ -191,8 +194,23 @@ export function registerQuizHandler(
     }
   };
 
+  const downloadCSV = async (data) => {
+    // 1. Generate CSV
+    const sessionCode = data.sessionCode;
+    const downloadCode = generateSessionCSV(
+      sessionCode,
+      sessions.get(sessionCode)
+    );
+
+    // 2. Send CSV file name to host
+    io.to(socket.id).emit(EVENTS.SERVER.DOWNLOAD_CSV, {
+      downloadCode: downloadCode,
+    });
+  };
+
   socket.on(EVENTS.CLIENT.START_QUIZ, fetchQuiz);
   socket.on(EVENTS.CLIENT.NEXT_QUIZ, sendNextQuiz);
   socket.on(EVENTS.CLIENT.SUBMIT_ANSWER, validateAnswer);
   socket.on(EVENTS.CLIENT.END_QUIZ, sendResult);
+  socket.on(EVENTS.CLIENT.DOWNLOAD_CSV, downloadCSV);
 }

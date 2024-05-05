@@ -13,6 +13,7 @@ const EVENTS = {
     NEXT_QUIZ: 'c-session:next-quiz',
     END_QUIZ: 'c-session:end-quiz',
     DOWNLOAD_CSV: 'c-session:download-csv',
+    CSV_DOWNLOADED: 'c-session:csv-downloaded',
   },
   SERVER: {
     JOIN_SESSION: 's-session:join',
