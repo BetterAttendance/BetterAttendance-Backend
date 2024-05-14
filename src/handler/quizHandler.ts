@@ -157,27 +157,27 @@ export function registerQuizHandler(
     const userId = socket.data.userId;
 
     if (userId === sessions.get(sessionCode).host) {
-      const recordedUsers = [];
-      const unrecordedUsers = [];
+      const attendeesData = [];
+      let id = 1;
+
       sessions.get(sessionCode).attendees.forEach((value, key) => {
-        if (value.correctAns >= 3) {
-          recordedUsers.push(value.username);
-        } else {
-          unrecordedUsers.push(value.username);
-        }
+        attendeesData.push({
+          key: id,
+          username: value.username,
+          correctAns: value.correctAns,
+        });
+        id += 1;
       });
 
       io.to(socket.id).emit(EVENTS.SERVER.QUIZ_RESULT, {
-        recordedUsers: recordedUsers,
-        unrecordedUsers: unrecordedUsers,
+        attendeesData: attendeesData,
       });
 
       if (CONFIG.DEBUG) {
         console.log(
           `[QUIZ_RESULT] Quiz result sent to host ${userId} for session ${sessionCode}`
         );
-        console.log(`[QUIZ_RESULT] Recorded users: ${recordedUsers}`);
-        console.log(`[QUIZ_RESULT] Unrecorded users: ${unrecordedUsers}`);
+        console.info(attendeesData);
       }
     } else {
       let result = sessions.get(sessionCode).attendees.get(userId).correctAns;
