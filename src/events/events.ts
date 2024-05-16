@@ -12,6 +12,8 @@ const EVENTS = {
     SUBMIT_ANSWER: 'c-session:submit-answer',
     NEXT_QUIZ: 'c-session:next-quiz',
     END_QUIZ: 'c-session:end-quiz',
+    DOWNLOAD_CSV: 'c-session:download-csv',
+    CSV_DOWNLOADED: 'c-session:csv-downloaded',
   },
   SERVER: {
     JOIN_SESSION: 's-session:join',
@@ -24,6 +26,7 @@ const EVENTS = {
     QUIZ_RESULT: 's-session:quiz-result',
     NEXT_QUIZ: 's-session:next-quiz',
     END_QUIZ: 's-session:end-quiz',
+    DOWNLOAD_CSV: 's-session:download-csv',
   },
 };
 
